@@ -18,7 +18,7 @@ DAISGram.o: DAISGram.cpp libbmp.o
 main: tensor.o DAISGram.o libbmp.o main.cpp 
 	g++ libbmp.o tensor.o DAISGram.o main.cpp -o $(MAIN) $(FLAGS)
 
-testbmp: test_bmplib.cpp libbmp.o
+testbmp: test_bmplib.cpp libbmp.o 
 	g++ libbmp.o test_bmplib.cpp -o test_bmplib $(FLAGS)
 
 main_tensor: tensor.o main_tensor.cpp 
