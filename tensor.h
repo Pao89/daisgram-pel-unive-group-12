@@ -7,11 +7,13 @@
 #include <math.h>
 #include <fstream>
 
-#include "dais_exc.h"
+#include "dais_exc.h" //just dais_exc.h
 
 #define PI 3.141592654
 #define FLT_MAX 3.402823466e+38F /* max value */
 #define FLT_MIN 1.175494351e-38F /* min positive value */
+#define EPSILON 0.000001f  /* the rounding precision for comparing floats */
+
 
 using namespace std;
 
@@ -19,7 +21,7 @@ class Tensor
 {
 private:
 
-    float * data = nullptr; //<-- you are free to change this data structure (don't use std::vectors or std::array)
+    float *** data = nullptr; //<-- you are free to change this data structure (don't use std::vectors or std::array)
 
     int r = 0;  // number of rows
     int c = 0;  // number of columns
@@ -83,6 +85,37 @@ public:
      * @return the new Tensor
      */
     Tensor(const Tensor& that);
+
+    /**
+     * Operator overloading ==
+     * 
+     * It performs the point-wise equality check between two Tensors.
+     * 
+     * The equality check between floating points cannot be simply performed using the 
+     * operator == but it should take care on their approximation.
+     * 
+     * This approximation is known as rounding (do you remember "Architettura degli Elaboratori"?)
+     *  
+     * For example, given a=0.1232 and b=0.1233 they are 
+     * - the same, if we consider a rounding with 1, 2 and 3 decimals 
+     * - different when considering 4 decimal points. In this case b>a
+     * 
+     * So, given two floating point numbers "a" and "b", how can we check their equivalence? 
+     * through this formula:
+     * 
+     * a ?= b if and only if |a-b|<EPSILON
+     * 
+     * where EPSILON is fixed constant (defined at the beginning of this header file)
+     * 
+     * Two tensors A and B are the same if:
+     * A[i][j][k] == B[i][j][k] for all i,j,k 
+     * where == is the above formula.
+     * 
+     * The two tensors must have the same size otherwise throw a dimension_mismatch()
+     * 
+     * @return returns true if all their entries are "floating" equal
+     */
+    bool operator==(const Tensor& rhs) const;
 
     /**
      * Operator overloading -
@@ -230,7 +263,9 @@ public:
      * 
      * where max(k) and min(k) are the maximum and minimum value in the k-th channel.
      * 
-     * new_max is the new value for the maximum
+     * new_max is the new maximum value for each channel
+     * 
+     * - if max(k) and min(k) are the same, then the entire k-th channel is set to new_max.
      * 
      * @param new_max New maximum vale
      */
@@ -327,7 +362,7 @@ public:
      * @return the depth of the tensor
      */
     int depth()const;
-    
+
     /** 
      * Get minimum 
      * 
