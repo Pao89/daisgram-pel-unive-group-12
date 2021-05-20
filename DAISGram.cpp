@@ -76,11 +76,11 @@ void DAISGram::generate_random(int h, int w, int d){
 }
 
 DAISGram::DAISGram(){
-    throw method_not_implemented();
+    
 }
 
 DAISGram::~DAISGram(){
-    throw method_not_implemented();
+    
 }
 
 /**
@@ -89,7 +89,7 @@ DAISGram::~DAISGram(){
  * @return returns the number of rows in the image
  */
 int DAISGram::getRows(){
-    throw method_not_implemented();
+    return data.rows();
 }
 
 /**
@@ -98,7 +98,7 @@ int DAISGram::getRows(){
  * @return returns the number of columns in the image
  */
 int DAISGram::getCols(){
-    throw method_not_implemented();
+    return data.cols();
 }
 
 /**
@@ -107,7 +107,7 @@ int DAISGram::getCols(){
  * @return returns the number of channels in the image
  */
 int DAISGram::getDepth(){
-    throw method_not_implemented();
+    return data.depth();
 }
 
 /**
@@ -121,7 +121,12 @@ int DAISGram::getDepth(){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::brighten(float bright){
-    throw method_not_implemented();
+    DAISGram result;
+    Tensor resultData(data);
+    resultData = resultData + bright;
+    resultData.clamp(0,255);
+    result.data = resultData;
+    return result;
 }
 
 /**
@@ -132,7 +137,40 @@ DAISGram DAISGram::brighten(float bright){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::grayscale(){
-    throw method_not_implemented();
+    //To optimize?
+    DAISGram result;
+    Tensor resultData(data);
+    for(int i=0;i<getRows();i++){
+        for(int j=0;j<getCols();j++){
+            float avg = 0.0;
+            for(int k=0;k<getDepth();k++){
+                avg += resultData(i,j,k);         
+            }
+            avg = avg/getDepth();
+            for(int k=0;k<getDepth();k++){
+                resultData(i,j,k) = avg;     
+            }         
+        }                
+    }
+    resultData.clamp(0,255);
+    result.data = resultData;
+    return result;
+}
+
+void swap(float& n1, float& n2){
+    float temp = n1;
+    n1 = n2;
+    n2 = temp;
+}
+
+Tensor switchChannels(Tensor data, int c1, int c2){
+    Tensor result = data;
+    for(int i = 0; i<result.rows(); i++){
+        for(int j = 0; j<result.cols(); j++){
+            swap(result(i,j,c1), result(i,j,c2));
+        }
+    }
+    return result;
 }
 
 /**
@@ -149,8 +187,20 @@ DAISGram DAISGram::grayscale(){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::warhol(){
-    throw method_not_implemented();
+    DAISGram result;
+    Tensor topLeft = data;
+    Tensor topRight = switchChannels(data, 0, 1);
+    Tensor bottomLeft = switchChannels(data, 1, 2);
+    Tensor bottomRight = switchChannels(data, 0, 2);
+    Tensor resultData;
+    topLeft = topLeft.concat(topRight, 1);
+    bottomLeft = bottomLeft.concat(bottomRight, 1);
+    resultData = topLeft.concat(bottomLeft, 0);
+    result.data = resultData;
+    return result;
 }
+
+
 
 /**
  * Sharpen the image
@@ -167,7 +217,20 @@ DAISGram DAISGram::warhol(){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::sharpen(){
-    throw method_not_implemented();
+    DAISGram result;
+    Tensor resultData(data);
+    Tensor filter(3,3,resultData.depth(), -1.0);
+    for(int k = 0; k<filter.depth(); k++){
+        filter(0,0,k) = 0;
+        filter(0,2,k) = 0;
+        filter(1,1,k) = 5;
+        filter(2,0,k) = 0;
+        filter(2,2,k) = 0;
+    }
+    resultData = resultData.convolve(filter);
+    resultData.clamp(0,255);
+    result.data = resultData;
+    return result;
 }
 
 /**
@@ -186,7 +249,21 @@ DAISGram DAISGram::sharpen(){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::emboss(){
-    throw method_not_implemented();
+    DAISGram result;
+    Tensor resultData(data);
+    Tensor filter(3,3,resultData.depth(), 1.0);
+    for(int k = 0; k<filter.depth(); k++){
+        filter(0,0,k) = -2;
+        filter(0,1,k) = -1;
+        filter(0,2,k) = 0;
+        filter(1,0,k) = -1;
+        filter(2,0,k) = 0;
+        filter(2,2,k) = 2;
+    }
+    resultData = resultData.convolve(filter);
+    resultData.clamp(0,255);
+    result.data = resultData;
+    return result;
 }
 
 /**
@@ -206,7 +283,13 @@ DAISGram DAISGram::emboss(){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::smooth(int h){
-    throw method_not_implemented();
+    float smoothener = h;
+    Tensor filter(h,h,data.depth(),(1.0/(smoothener*smoothener)));
+    DAISGram result;
+    Tensor resultData(data);
+    resultData = resultData.convolve(filter);
+    result.data = resultData;
+    return result;
 }
 
 /**
@@ -228,7 +311,17 @@ DAISGram DAISGram::smooth(int h){
  * @return returns a new DAISGram containing the modified object
  */  
 DAISGram DAISGram::edge(){
-    throw method_not_implemented();
+    DAISGram result;
+    result = grayscale();
+    Tensor edgened(result.data);
+    Tensor filter(3,3,edgened.depth(),-1.0);
+    for(int i = 0; i<edgened.depth(); i++){
+        filter(1,1,i) = 8.0;
+    }
+    edgened = edgened.convolve(filter);
+    edgened.clamp(0,255);
+    result.data = edgened;
+    return result;
 }
 
 /**
@@ -247,7 +340,22 @@ DAISGram DAISGram::edge(){
  * @return returns a new DAISGram containing the blending of the two images.
  */  
 DAISGram DAISGram::blend(const DAISGram & rhs, float alpha){
-    throw method_not_implemented();
+    if (getRows() != rhs.data.rows() || getCols() != rhs.data.cols() || getDepth() != rhs.data.depth())
+    {
+        throw dimension_mismatch();
+    }
+    DAISGram result;
+    Tensor resultData(data);
+    for(int i = 0; i<getRows(); i++){
+        for(int j = 0; j<getCols(); j++){
+            for(int k = 0; k<getDepth(); k++){
+                resultData(i,j,k) = (alpha*resultData(i,j,k)) + ((1.0-alpha)*rhs.data(i,j,k)) ;//alpha*resultData(i,j,k) + (1.0-alpha)*rhs.data(i,j,k)
+            }
+        }
+    }
+    resultData.clamp(0,255);
+    result.data = resultData;
+    return result;
 }
 
 /**
@@ -265,7 +373,30 @@ DAISGram DAISGram::blend(const DAISGram & rhs, float alpha){
  * @return returns a new DAISGram containing the result.
  */  
 DAISGram DAISGram::greenscreen(DAISGram & bkg, int rgb[], float threshold[]){
-    throw method_not_implemented();
+    if (getRows() != bkg.data.rows() || getCols() != bkg.data.cols() || getDepth() != bkg.data.depth())
+    {
+        throw dimension_mismatch();
+    }
+    DAISGram result;
+    Tensor resultData(data);
+    int rgbChecklist = 0;
+    for(int i = 0; i<getRows(); i++){
+        for(int j = 0; j<getCols(); j++){
+            for(int k = 0; k<getDepth(); k++){
+                if((rgb[k] - threshold[k]) <= resultData(i,j,k) && resultData(i,j,k)<=(rgb[k] + threshold[k])){
+                    rgbChecklist++;
+                }
+            }
+            if(rgbChecklist==3){
+                for(int h = 0; h<getDepth(); h++){
+                    resultData(i,j,h) = bkg.data(i,j,h);
+                }
+            }
+            rgbChecklist = 0;
+        }
+    }
+    result.data = resultData;
+    return result;
 }
 
 /**

@@ -1,10 +1,9 @@
 MAIN = main
 FLAGS = -std=c++11 -lm -O3
-
 all: testbmp main main_tensor
 
 debug: FLAGS=-g
-debug: main
+debug: main 
 
 tensor.o: tensor.cpp
 	g++ tensor.cpp -o tensor.o -c $(FLAGS)

@@ -38,7 +38,6 @@ int main (int argc, char * argv[]) {
     if(argc>5) {
         axis = atoi(argv[5]);
     }
-
     a.read_file(fn_in_1);
     b.read_file(fn_in_2);
     

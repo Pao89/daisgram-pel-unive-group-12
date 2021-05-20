@@ -66,6 +66,7 @@ void destroy(float ***data, int r, int c)
  */
 Tensor::Tensor()
 {
+    
 }
 
 /**
@@ -91,7 +92,7 @@ Tensor::Tensor(int r, int c, int d, float v)
  */
 Tensor::~Tensor()
 {
-    destroy(data, r, c);
+    if(data != nullptr) destroy(data, r, c);
 }
 
 /**
@@ -103,7 +104,9 @@ Tensor::~Tensor()
  */
 float Tensor::operator()(int i, int j, int k) const
 {
-    if (i >= 0 && i < c && j >= 0 && j < r && k >= 0 && k < d)
+    if(data == nullptr)
+        throw tensor_not_initialized();
+    if (i >= 0 && i < r && j >= 0 && j < c && k >= 0 && k < d)
     {
         return data[i][j][k];
     }
@@ -125,7 +128,9 @@ float Tensor::operator()(int i, int j, int k) const
  */
 float &Tensor::operator()(int i, int j, int k)
 {
-    if (i >= 0 && i < c && j >= 0 && j < r && k >= 0 && k < d)
+    if(data == nullptr)
+        throw tensor_not_initialized();
+    if (i >= 0 && i < r && j >= 0 && j < c && k >= 0 && k < d)
     {
         return *(&data[i][j][k]);
     }
@@ -144,21 +149,25 @@ float &Tensor::operator()(int i, int j, int k)
  */
 Tensor::Tensor(const Tensor &that)
 {
-    this->r = that.r;
-    this->c = that.c;
-    this->d = that.d;
-    this->data = new float **[c];
-    for (int i = 0; i < r; i++)
-    {
-        this->data[i] = new float *[r];
-        for (int j = 0; j < c; j++)
+    if(that.data != nullptr){
+        this->r = that.r;
+        this->c = that.c;
+        this->d = that.d;
+        this->data = new float **[r];
+        for (int i = 0; i < r; i++)
         {
-            this->data[i][j] = new float[d];
-            for (int k = 0; k < d; k++)
+            this->data[i] = new float *[c];
+            for (int j = 0; j < c; j++)
             {
-                this->data[i][j][k] = that.data[i][j][k];
+                this->data[i][j] = new float[d];
+                for (int k = 0; k < d; k++)
+                {
+                    this->data[i][j][k] = that.data[i][j][k];
+                }
             }
         }
+    } else {
+        throw tensor_not_initialized();
     }
 }
 
@@ -193,6 +202,12 @@ Tensor::Tensor(const Tensor &that)
  */
 bool Tensor::operator==(const Tensor &rhs) const
 {
+    if (rhs.data == nullptr){
+        if(data == nullptr){
+            return true;
+        }
+        return false;
+    }
     if (this->r != rhs.r || this->c != rhs.c || this->d != rhs.d)
     {
         throw dimension_mismatch();
@@ -234,6 +249,8 @@ bool operationFlowCheck(double result)
  */
 Tensor Tensor::operator-(const Tensor &rhs) const
 {
+    if(data == nullptr || rhs.data == nullptr)
+        throw tensor_not_initialized();
     if (this->r != rhs.r || this->c != rhs.c || this->d != rhs.d)
     {
         throw dimension_mismatch();
@@ -267,6 +284,8 @@ Tensor Tensor::operator-(const Tensor &rhs) const
 */
 Tensor Tensor::operator+(const Tensor &rhs) const
 {
+    if(data == nullptr || rhs.data == nullptr)
+        throw tensor_not_initialized();
     if (this->r != rhs.r || this->c != rhs.c || this->d != rhs.d)
     {
         throw dimension_mismatch();
@@ -301,6 +320,8 @@ Tensor Tensor::operator+(const Tensor &rhs) const
  */
 Tensor Tensor::operator*(const Tensor &rhs) const
 {
+    if(data == nullptr || rhs.data == nullptr)
+        throw tensor_not_initialized();
     if (this->r != rhs.r || this->c != rhs.c || this->d != rhs.d)
     {
         throw dimension_mismatch();
@@ -335,6 +356,8 @@ Tensor Tensor::operator*(const Tensor &rhs) const
  */
 Tensor Tensor::operator/(const Tensor &rhs) const
 {
+    if(data == nullptr || rhs.data == nullptr)
+        throw tensor_not_initialized();
     if (this->r != rhs.r || this->c != rhs.c || this->d != rhs.d)
     {
         throw dimension_mismatch();
@@ -356,7 +379,6 @@ Tensor Tensor::operator/(const Tensor &rhs) const
         }
     }
     return result;
-    //attento a divisione per zero, underflow e overflow checks by casting double and then confront F_MAX F_MIN F_NEGATIVE
 }
 
 /**
@@ -370,6 +392,8 @@ Tensor Tensor::operator/(const Tensor &rhs) const
  */
 Tensor Tensor::operator-(const float &rhs) const
 {
+    if(data == nullptr) 
+        throw tensor_not_initialized();
     Tensor result(this->r, this->c, this->d, 0.0);
     for (int i = 0; i < r; i++)
     {
@@ -399,6 +423,8 @@ Tensor Tensor::operator-(const float &rhs) const
  */
 Tensor Tensor::operator+(const float &rhs) const
 {
+    if(data == nullptr) 
+        throw tensor_not_initialized();
     Tensor result(this->r, this->c, this->d, 0.0);
     for (int i = 0; i < r; i++)
     {
@@ -428,6 +454,8 @@ Tensor Tensor::operator+(const float &rhs) const
  */
 Tensor Tensor::operator*(const float &rhs) const
 {
+    if(data == nullptr) 
+        throw tensor_not_initialized();
     Tensor result(this->r, this->c, this->d, 0.0);
     for (int i = 0; i < r; i++)
     {
@@ -457,6 +485,10 @@ Tensor Tensor::operator*(const float &rhs) const
  */
 Tensor Tensor::operator/(const float &rhs) const
 {
+    if(data == nullptr) 
+        throw tensor_not_initialized();
+    if (rhs == 0.0)
+        throw division_by_zero();
     Tensor result(this->r, this->c, this->d, 0.0);
     for (int i = 0; i < r; i++)
     {
@@ -464,9 +496,7 @@ Tensor Tensor::operator/(const float &rhs) const
         {
             for (int k = 0; k < d; k++)
             {
-                if (rhs == 0.0)
-                    throw division_by_zero();
-                else if (operationFlowCheck((double)this->data[i][j][k] - (double)rhs))
+                if (operationFlowCheck((double)this->data[i][j][k] - (double)rhs))
                     throw error_in_operation();
                 else
                     result(i, j, k) = this->data[i][j][k] / rhs;
@@ -486,20 +516,22 @@ Tensor Tensor::operator/(const float &rhs) const
  */
 Tensor &Tensor::operator=(const Tensor &other)
 {
+    if(other.data == nullptr)
+        throw tensor_not_initialized();
     destroy(data, r, c);
     this->r = other.r;
     this->c = other.c;
     this->d = other.d;
-    this->data = new float **[c];
+    this->data = new float **[r];
     for (int i = 0; i < r; i++)
     {
-        this->data[i] = new float *[r];
+        this->data[i] = new float *[c];
         for (int j = 0; j < c; j++)
         {
             this->data[i][j] = new float[d];
             for (int k = 0; k < d; k++)
             {
-                this->data[i][j][k] = other.data[i][j][k];
+                this->data[i][j][k] = other(i,j,k);
             }
         }
     }
@@ -519,13 +551,15 @@ Tensor &Tensor::operator=(const Tensor &other)
 void Tensor::init(int r, int c, int d, float v)
 {
     //3 for innestati, inizializzaione del data con valore "v"
+    if(r == 0 || c == 0 || d == 0) 
+        throw tensor_not_initialized();
     this->r = r;
     this->c = c;
     this->d = d;
-    data = new float **[c];
+    data = new float **[r];
     for (int i = 0; i < r; i++)
     {
-        data[i] = new float *[r];
+        data[i] = new float *[c];
         for (int j = 0; j < c; j++)
         {
             data[i][j] = new float[d];
@@ -547,6 +581,7 @@ void Tensor::init(int r, int c, int d, float v)
  */
 void Tensor::clamp(float low, float high)
 {
+    if(data == nullptr) throw tensor_not_initialized();
     //valori tra low e high = uguali così
     //valore < low = low e valore > high = high
     for (int i = 0; i < r; i++)
@@ -581,8 +616,8 @@ void Tensor::clamp(float low, float high)
  */
 void Tensor::rescale(float new_max)
 {
-    //trova min e max
-    //poi itera e per ciascun value a i,j,k = st
+    if(data == nullptr)
+        throw tensor_not_initialized();
     for (int k = 0; k < d; k++)
     {
         float min = getMin(k);
@@ -614,8 +649,8 @@ void Tensor::rescale(float new_max)
  */
 Tensor Tensor::padding(int pad_h, int pad_w) const
 {
-    //con dimensioni del tensore attuale, applico le formule e inizializzo un tensore vuoto con le nuove dimensioni e v a 0
-    //ciclo da pad_h/pad_w fino a new_size-pad_h
+    if(data == nullptr)
+        throw tensor_not_initialized();
     int rows = this->r + 2 * pad_h;
     int cols = this->c + 2 * pad_w;
     int depth = this->d;
@@ -654,10 +689,13 @@ Tensor Tensor::padding(int pad_h, int pad_w) const
  */
 Tensor Tensor::subset(unsigned int row_start, unsigned int row_end, unsigned int col_start, unsigned int col_end, unsigned int depth_start, unsigned int depth_end) const
 {
-    if (!((this->d > depth_start && this->d > depth_end) &&
-          (this->c > col_start && this->c > col_end) &&
-          (this->r > row_start && this->c > row_end) &&
-        (depth_end > depth_start && row_end > row_start && col_end > col_start)))
+    if(data == nullptr)
+        throw tensor_not_initialized();
+    unsigned int depth = this->d, rows = this->r, cols = this->c;
+    if (!((depth >= depth_start && depth >= depth_end) &&
+          (cols >= col_start && cols >=  col_end) &&
+          (rows >= row_start && rows >=  row_end)) &&
+        (depth_end >= depth_start && row_end >= row_start && col_end >= col_start))
         throw index_out_of_bound();
 
     Tensor result(row_end - row_start, col_end - col_start, depth_end - depth_start, 0.0);
@@ -668,7 +706,7 @@ Tensor Tensor::subset(unsigned int row_start, unsigned int row_end, unsigned int
         {
             for (unsigned int k = depth_start; k < depth_end; k++)
             {
-                result(i - col_start, j - row_start, k - depth_start) = this->data[i][j][k];
+                result(i - row_start, j - col_start, k - depth_start) = this->data[i][j][k];
             }
         }
     }
@@ -696,6 +734,8 @@ Tensor Tensor::subset(unsigned int row_start, unsigned int row_end, unsigned int
  */
 Tensor Tensor::concat(const Tensor &rhs, int axis) const
 {
+    if(rhs.data==nullptr || data==nullptr)throw tensor_not_initialized();
+    if(axis < 0 || axis > 2) throw concat_wrong_dimension();
     if(axis==0 && rhs.c!=this->c && rhs.d!=this->d)throw dimension_mismatch();
     if(axis==1 && rhs.r!=this->r && rhs.d!=this->d)throw dimension_mismatch();
     if(axis==2 && rhs.r!=this->r && rhs.c!=this->c)throw dimension_mismatch();
@@ -750,6 +790,16 @@ Tensor Tensor::concat(const Tensor &rhs, int axis) const
     return result;
 }
 
+float applyFilter(const Tensor &a,const Tensor &b, int filterChannel){
+    float result=0.0;
+    for(int i = 0; i<b.rows(); i++){
+        for(int j = 0; j<a.cols(); j++){
+            result+=a(i,j,0)*b(i,j,filterChannel);
+        }
+    }
+    return result;
+}
+
 /** 
  * Convolution 
  * 
@@ -764,7 +814,20 @@ Tensor Tensor::concat(const Tensor &rhs, int axis) const
  */
 Tensor Tensor::convolve(const Tensor &f) const
 {
-    throw method_not_implemented();
+    if(f.data==nullptr || data==nullptr) throw tensor_not_initialized();
+    if(this->d!=f.d)throw dimension_mismatch();
+    Tensor padded;
+    Tensor result(*this);
+    padded = result.padding(floor(f.rows()/2),floor(f.cols()/2));
+    for(int i = 0; i<result.rows(); i++){
+        for(int j = 0; j<result.cols(); j++){
+            for(int k = 0; k<result.depth(); k++){
+                Tensor toApplyFilterOn = padded.subset(i, i+f.rows(), j, j+f.cols(), k, k+1);
+                result(i,j,k) = applyFilter(toApplyFilterOn, f, k);
+            }
+        }
+    }
+    return result;
 }
 
 /* UTILITY */
@@ -808,7 +871,8 @@ int Tensor::depth() const
  */
 float Tensor::getMin(int k) const
 {
-    //ciclo per i,j e trova il valore minimo del k-esimo canale
+    if(data == nullptr) throw tensor_not_initialized();
+    if(k < 0 || k > depth()) throw index_out_of_bound();
     float min = FLT_MAX;
     for (int i = 0; i < r; i++)
     {
@@ -832,7 +896,8 @@ float Tensor::getMin(int k) const
  */
 float Tensor::getMax(int k) const
 {
-    //ciclo per i,j e trova il valore massimo del k-esimo canale
+    if(data == nullptr) throw tensor_not_initialized();
+    if(k < 0 || k > depth()) throw index_out_of_bound();
     float max = FLT_MIN;
     for (int i = 0; i < r; i++)
     {
@@ -877,7 +942,17 @@ void Tensor::showSize() const
  */
 ostream &operator<<(ostream &stream, const Tensor &obj)
 {
-    throw method_not_implemented();
+    if(obj.data==nullptr) throw tensor_not_initialized();
+    for(int k = 0; k<obj.depth(); k++){
+        stream << "Layer " << k << " " <<endl;
+        for(int i = 0; i<obj.rows(); i++){
+            for(int j = 0; j<obj.cols(); j++){
+                stream << "[" << i << ", " << j << " ] =>" << obj(i,j,k) << endl;
+            }
+        }
+        stream << "End of Layer " << k << endl;
+    }
+    return stream;
 }
 
 /**
@@ -909,27 +984,21 @@ ostream &operator<<(ostream &stream, const Tensor &obj)
  */
 void Tensor::read_file(string filename)
 {
-    destroy(this->data, this->r, this->c);
+    if(data != nullptr) destroy(data, r, c);
     ifstream file(filename);
     if(file.good()){
         string result;
-        getline(file, result, '\n');
-        this->r=stoi(result);
-        getline(file, result, '\n');
-        this->c=stoi(result);
-        getline(file, result, '\n');
-        this->d=stoi(result);
-        this->data = new float **[this->r];
-        for (int i = 0; i < this->r && !file.eof(); i++)
+        file >> r;
+        file >> c;
+        file >> d;
+        init(r,c,d,0.0);
+        for (int k = 0; k < d && !file.eof(); k++)
         {
-            this->data[i] = new float *[this->c];
-            for (int j = 0; j < this->c && !file.eof(); j++)
+            for (int i = 0; i < r && !file.eof(); i++)
             {
-                this->data[i][j] = new float[this->d];
-                for (int k = 0; k < d && !file.eof(); k++)
+                for (int j = 0; j < c && !file.eof(); j++)
                 {
-                    getline(file, result, '\n');
-                    this->data[i][j][k] = stof(result);
+                    file >> this->data[i][j][k];
                 }
             }
         }
@@ -962,16 +1031,17 @@ void Tensor::read_file(string filename)
  */
 void Tensor::write_file(string filename)
 {
+    if(data == nullptr) throw tensor_not_initialized();
     ofstream output{filename};
     if(!output.good())throw unable_to_open_file();
         output<<this->r<<endl;
         output<<this->c<<endl;
         output<<this->d<<endl;
-        for (int i = 0; i < this->r ; i++)
+        for (int k = 0; k < this->d ; k++)
         {
-            for (int j = 0; j < this->c ; j++)
+            for (int i = 0; i < this->r ; i++)
             {
-                for (int k = 0; k < d ; k++)
+                for (int j = 0; j < this->c ; j++)
                 {
                      output<<this->data[i][j][k]<<endl;
                 }
