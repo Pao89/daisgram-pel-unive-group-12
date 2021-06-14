@@ -137,7 +137,6 @@ DAISGram DAISGram::brighten(float bright){
  * @return returns a new DAISGram containing the modified object
  */
 DAISGram DAISGram::grayscale(){
-    //To optimize?
     DAISGram result;
     Tensor resultData(data);
     for(int i=0;i<getRows();i++){
@@ -157,12 +156,18 @@ DAISGram DAISGram::grayscale(){
     return result;
 }
 
+
 void swap(float& n1, float& n2){
     float temp = n1;
     n1 = n2;
     n2 = temp;
 }
 
+/**
+ * switchChannels
+ * 
+ * swaps the channels (usually depth) of a given Tensor
+*/
 Tensor switchChannels(Tensor data, int c1, int c2){
     Tensor result = data;
     for(int i = 0; i<result.rows(); i++){

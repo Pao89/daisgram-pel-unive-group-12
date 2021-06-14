@@ -21,7 +21,7 @@ void show_help(){
     printf("\n");
 }
 
-int main (int argc, char * arg0.5v[]) {
+int main (int argc, char * argv[]) {
 
     char * fn_in_1;  /* file 1 */
     char * fn_in_2;  /* file 2 */

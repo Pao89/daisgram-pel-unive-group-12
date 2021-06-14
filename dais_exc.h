@@ -56,21 +56,11 @@ struct filter_odd_dimensions{
     /* Utilizzate questa eccezione se il filtro per la convoluzione NON ha dimensioni (altezza e largezza) dispari */
 };
 
-struct error_in_operation{
-    string msg = "There is overflow or underflow in the attempted operation";
-    string code = "009";
-};
-
-struct division_by_zero{
-    string msg = "There is division by zero operation";
-    string code = "010";
-};
-
-struct unable_to_open_file{
-    string ms = "There was an error while trying to open the file";
-    string code = "011";
+struct unknown_exception{
+    string msg = "An error occured";
+    string code = "-1";   
+    /* Utilizzate questa eccezione per qualsiasi tipo di problema non gestito da altre eccezioni */
 };
 
 
 #endif
-
